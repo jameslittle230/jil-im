@@ -5,8 +5,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.60"
-axum = "0.5.13"
+askama = "0.11.1"
+axum = "0.6.1"
 color-eyre = "0.6.2"
+golink = { path = "../golink" }
 hyper = "0.14.20"
 pretty_assertions = "1.2.1"
 serde = "1.0.141"
@@ -16,3 +18,4 @@ tabled = "0.8.0"
 thiserror = "1.0.31"
 tokio = { version = "1.20.1", features = ["full"] }
 tower = "0.4.13"
+tower-http = { version = "0.3.0", features = ["fs", "trace"] }
