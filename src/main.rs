@@ -49,6 +49,7 @@ d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
         .nest(
             "/-",
             Router::new()
+                .route("/healthcheck", get(handle_healthcheck))
                 .route("/admin/view", get(display_list))
                 .nest_service(
                     "/assets",
@@ -81,6 +82,10 @@ d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
 
 async fn handle_error(_err: io::Error) -> impl IntoResponse {
     (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong...")
+}
+
+async fn handle_healthcheck() -> impl IntoResponse {
+    (StatusCode::OK, "hello!")
 }
 
 async fn display_list() -> impl IntoResponse {
