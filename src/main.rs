@@ -1,11 +1,11 @@
-use askama::Template;
-
 use axum::{
     extract,
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Response},
     routing::{get, get_service, post},
     Extension, Router,
 };
+
+use axum_sessions::{async_session::MemoryStore, SessionLayer};
 
 use tower_http::services::ServeDir;
 
@@ -17,34 +17,58 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-#[derive(Debug, Clone, Default)]
-struct State {
-    view_count: usize,
-}
+// mod form_submit;
+mod create_link;
+mod state;
+mod util;
+
+use state::State;
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
+
     // build our application with a route
     let shared_state = Arc::new(Mutex::new(State::default()));
+
+    let store = MemoryStore::new();
+    let secret = b"
+93 ad b2 56 79 30 85 5d 02 d1 0f e5 52 80 75 5b 
+80 bf 93 f7 b0 62 9d 42 fd e6 eb 10 6c 2f 6c 3d 
+da 6e 12 ed 0d d3 e7 93 eb 8e 97 bb 32 db 7f ca 
+d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
+    let session_layer = SessionLayer::new(store, secret);
+
+    state::fetch::fetch_state(&shared_state).await;
+
     let app = Router::new()
-        .route("/", get(display_create_form))
-        .route("/-/admin/view", get(display_list))
-        .nest_service(
-            "/-/assets",
-            get_service(ServeDir::new("assets")).handle_error(handle_error),
+        .route(
+            "/",
+            get(create_link::display_form).post(create_link::submit_form),
         )
         .nest(
-            "/-/api",
+            "/-",
             Router::new()
-                .route("/redirects", get(list_redirects))
-                .route("/redirects", post(create_redirects))
-                .route("/redirects/:key", get(retrieve_redirect))
-                .route("/redirects/:key/update", post(update_redirect))
-                .route("/redirects/:key/delete", post(delete_redirect)),
+                .route("/admin/view", get(display_list))
+                .nest_service(
+                    "/assets",
+                    get_service(ServeDir::new("assets")).handle_error(handle_error),
+                )
+                .nest(
+                    "/api",
+                    Router::new()
+                        .route("/redirects", get(list_redirects))
+                        .route("/redirects", post(create_redirects))
+                        .route("/redirects/:key", get(retrieve_redirect))
+                        .route("/redirects/:key/update", post(update_redirect))
+                        .route("/redirects/:key/delete", post(delete_redirect)),
+                )
+                .fallback(handle_dashroute_404),
         )
-        .route("/:key", get(redirect))
+        .route("/*path", get(redirect))
         .layer(Extension(shared_state))
-        .fallback(handle_api_404);
+        .layer(session_layer)
+        .fallback(handle_404);
 
     // run it
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -53,14 +77,6 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
-}
-
-async fn display_create_form() -> impl IntoResponse {
-    #[derive(Template)]
-    #[template(path = "create.html")]
-    struct CreateTemplate {}
-
-    HtmlTemplate(CreateTemplate {})
 }
 
 async fn handle_error(_err: io::Error) -> impl IntoResponse {
@@ -91,56 +107,37 @@ async fn redirect(
     extract::OriginalUri(uri): extract::OriginalUri,
     Extension(state): Extension<Arc<Mutex<State>>>,
 ) -> Response {
-    let mut state = state.lock().unwrap();
-    state.view_count += 1;
-
-    fn lookup(input: &str) -> Option<String> {
-        match input {
-            "asdf" => Some("https://google.com".to_string()),
-            "foo" => Some("https://jameslittle.me".to_string()),
-            _ => None,
-        }
-    }
-
-    let url = format!("http://go{uri}");
-    dbg!(&url);
-
-    let resolution = golink::resolve(&url, &lookup);
+    let resolution = golink::resolve(&uri.to_string(), &|value| {
+        state
+            .lock()
+            .unwrap()
+            .links
+            .get(value)
+            .map(|link| link.longurl.clone())
+    });
 
     dbg!(&resolution);
 
     match resolution {
-        Ok(golink::GolinkResolution::RedirectRequest(uri)) => {
+        Ok(golink::GolinkResolution::RedirectRequest(uri, shortname)) => {
+            state
+                .lock()
+                .unwrap()
+                .links
+                .entry(shortname)
+                .and_modify(|v| v.clicks += 1);
+
             (StatusCode::TEMPORARY_REDIRECT, [(header::LOCATION, uri)]).into_response()
         }
-        _ => (StatusCode::NOT_IMPLEMENTED, "not implemented").into_response(),
+        Err(e) => (StatusCode::IM_A_TEAPOT, e.to_string()).into_response(),
+        _ => (StatusCode::NOT_IMPLEMENTED, "metadata request").into_response(),
     }
 }
 
-async fn handle_api_404() -> impl IntoResponse {
+async fn handle_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Route not found.")
 }
 
-#[derive(Template)]
-#[template(path = "hello.html")]
-struct HelloTemplate {
-    name: String,
-}
-
-struct HtmlTemplate<T>(T);
-
-impl<T> IntoResponse for HtmlTemplate<T>
-where
-    T: Template,
-{
-    fn into_response(self) -> Response {
-        match self.0.render() {
-            Ok(html) => Html(html).into_response(),
-            Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to render template. Error: {}", err),
-            )
-                .into_response(),
-        }
-    }
+async fn handle_dashroute_404() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, "Route not found.")
 }

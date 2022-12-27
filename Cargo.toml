@@ -7,13 +7,20 @@ edition = "2021"
 anyhow = "1.0.60"
 askama = "0.11.1"
 axum = "0.6.1"
+axum-sessions = "0.4.1"
+bcrypt = "0.13.0"
 color-eyre = "0.6.2"
+dotenv = "0.15.0"
 golink = { path = "../golink" }
 hyper = "0.14.20"
 pretty_assertions = "1.2.1"
-serde = "1.0.141"
+rand = "0.8.5"
+reqwest = { version = "0.11.13", features = ["json"] }
+serde = { version = "1.0.141", features = ["derive"] }
 serde_json = "1.0.82"
 serde_path_to_error = "0.1.8"
+strum = { version = "0.24.1", features = ["derive", "strum_macros"] }
+strum_macros = "0.24.3"
 tabled = "0.8.0"
 thiserror = "1.0.31"
 tokio = { version = "1.20.1", features = ["full"] }
