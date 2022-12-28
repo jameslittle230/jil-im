@@ -12,7 +12,7 @@ bcrypt = "0.13.0"
 chrono = { version = "0.4.23", features = ["serde"] }
 color-eyre = "0.6.2"
 dotenv = "0.15.0"
-golink = { version = "0.6.0", path = "../golink" }
+golink = { version = "0.6.0" }
 hyper = "0.14.20"
 pretty_assertions = "1.2.1"
 rand = "0.8.5"
