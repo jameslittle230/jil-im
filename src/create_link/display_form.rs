@@ -8,12 +8,13 @@ use askama::Template;
 use axum::{response::IntoResponse, Extension};
 use axum_sessions::extractors::WritableSession;
 
-use super::submit_form::CreateFormFlashResponse;
+use super::submit_form::{CreateFormRememberValues, CreateFormUserFeedback};
 
 #[derive(Template)]
 #[template(path = "create_link.jinja")]
 struct CreateTemplate {
-    message: Option<CreateFormFlashResponse>,
+    message: Option<CreateFormUserFeedback>,
+    form_user_values: CreateFormRememberValues,
     popular: Vec<Link>,
     recent: Vec<Link>,
     base_url: String,
@@ -23,7 +24,9 @@ pub(crate) async fn display_form(
     mut session: WritableSession,
     Extension(state): Extension<Arc<Mutex<State>>>,
 ) -> impl IntoResponse {
-    let message: Option<CreateFormFlashResponse> = session.get("form_submit");
+    let message: Option<CreateFormUserFeedback> = session.get("form_submit");
+    let form_user_values: CreateFormRememberValues =
+        session.get("form_user_values").unwrap_or_default();
 
     let state = state.lock().unwrap();
 
@@ -41,6 +44,7 @@ pub(crate) async fn display_form(
 
     HtmlTemplate(CreateTemplate {
         message,
+        form_user_values,
         popular,
         recent,
         base_url: std::env::var("BASE_URL").unwrap(),

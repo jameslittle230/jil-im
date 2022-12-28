@@ -17,8 +17,14 @@ pub(crate) struct CreateForm {
     password: String,
 }
 
+#[derive(Serialize, Deserialize, Default, Clone)]
+pub(crate) struct CreateFormRememberValues {
+    pub(crate) shortname: String,
+    pub(crate) longurl: String,
+}
+
 #[derive(Serialize, Deserialize)]
-pub(crate) enum CreateFormFlashResponse {
+pub(crate) enum CreateFormUserFeedback {
     Success(String),
     Error(String),
 }
@@ -58,10 +64,18 @@ pub(crate) async fn submit_form(
             .collect();
     }
 
+    let _ = session.insert(
+        "form_user_values",
+        CreateFormRememberValues {
+            shortname: form.shortname.clone(),
+            longurl: form.longurl.clone(),
+        },
+    );
+
     if bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() == false {
         let _ = session.insert(
             "form_submit",
-            CreateFormFlashResponse::Error("Password was invalid.".to_string()),
+            CreateFormUserFeedback::Error("Password was invalid.".to_string()),
         );
         return (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response();
     }
@@ -92,7 +106,7 @@ pub(crate) async fn submit_form(
                     CreateEntryApiResponse::Success(success_response) => {
                         let _ = session.insert(
                             "form_submit",
-                            CreateFormFlashResponse::Success(format!(
+                            CreateFormUserFeedback::Success(format!(
                                 "{}/{}",
                                 std::env::var("BASE_URL").unwrap(),
                                 form.shortname
@@ -114,14 +128,14 @@ pub(crate) async fn submit_form(
                     CreateEntryApiResponse::Error(api_error) => {
                         let _ = session.insert(
                             "form_submit",
-                            CreateFormFlashResponse::Error(api_error.message),
+                            CreateFormUserFeedback::Error(api_error.message),
                         );
                     }
                 },
                 Err(error) => {
                     let _ = session.insert(
                         "form_submit",
-                        CreateFormFlashResponse::Error(format!("Unexpected error: {:?}", error)),
+                        CreateFormUserFeedback::Error(format!("Unexpected error: {:?}", error)),
                     );
                 }
             }
@@ -129,7 +143,7 @@ pub(crate) async fn submit_form(
         Err(error) => {
             let _ = session.insert(
                 "form_submit",
-                CreateFormFlashResponse::Error(format!("Unexpected error: {:?}", error)),
+                CreateFormUserFeedback::Error(format!("Unexpected error: {:?}", error)),
             );
         }
     };

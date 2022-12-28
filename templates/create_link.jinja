@@ -4,13 +4,13 @@
 
 {% block content %}
 
-{% if let Some(CreateFormFlashResponse::Success(url)) = message %}
+{% if let Some(CreateFormUserFeedback::Success(url)) = message %}
 <div class="alert alert-success alert-dismissible fade show" role="alert">
   Successfully created
   <a href="{{ url }}" class="alert-link">{{ url }}</a>!
   <button type="button" class="btn-close"></button>
 </div>
-{% elseif let Some(CreateFormFlashResponse::Error(error_msg)) = message %}
+{% elseif let Some(CreateFormUserFeedback::Error(error_msg)) = message %}
 <div class="alert alert-danger alert-dismissible fade show" role="alert">
   {{error_msg}}
   <button type="button" class="btn-close"></button>
@@ -20,10 +20,9 @@
 <div class="row">
   <div class="col-12 col-lg-6 mb-5">
     <form action="" method="POST">
-      <input type="hidden" name="_form" value="create" />
       <div class="mb-3">
         <label for="longurl" class="form-label">Long URL</label>
-        <input type="text" class="form-control" id="longurl" name="longurl" />
+        <input type="text" class="form-control" id="longurl" name="longurl" value='{{ form_user_values.longurl }}' />
         <div class="form-text">
           Learn more about <a href="/about">template syntax</a>.
         </div>
@@ -32,7 +31,8 @@
         <label for="shortname" class="form-label">Short URL</label>
         <div class="input-group">
           <span class="input-group-text">https://jil.im/</span>
-          <input type="text" class="form-control" id="shortname" name="shortname" />
+          <input type="text" class="form-control" id="shortname" name="shortname"
+            value='{{ form_user_values.shortname }}' />
         </div>
         <div class="form-text">Leave blank for something random.</div>
       </div>
