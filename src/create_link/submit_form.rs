@@ -8,7 +8,11 @@ use serde::{Deserialize, Serialize};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use crate::{state::Link, State};
+use crate::{
+    state::Link,
+    util::flash::{flash, FlashType},
+    State,
+};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct CreateForm {
@@ -21,6 +25,15 @@ pub(crate) struct CreateForm {
 pub(crate) struct CreateFormRememberValues {
     pub(crate) shortname: String,
     pub(crate) longurl: String,
+}
+
+impl From<&CreateForm> for CreateFormRememberValues {
+    fn from(value: &CreateForm) -> Self {
+        Self {
+            shortname: value.shortname.clone(),
+            longurl: value.longurl.clone(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -64,19 +77,19 @@ pub(crate) async fn submit_form(
             .collect();
     }
 
-    let _ = session.insert(
-        "form_user_values",
-        CreateFormRememberValues {
-            shortname: form.shortname.clone(),
-            longurl: form.longurl.clone(),
-        },
+    flash(
+        FlashType::CreateFormUserValues,
+        CreateFormRememberValues::from(&form),
+        &mut session,
     );
 
     if bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() == false {
-        let _ = session.insert(
-            "form_submit",
+        flash(
+            FlashType::CreateFormUserFeedback,
             CreateFormUserFeedback::Error("Password was invalid.".to_string()),
+            &mut session,
         );
+
         return (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response();
     }
 
@@ -104,13 +117,14 @@ pub(crate) async fn submit_form(
             match result {
                 Ok(api_response) => match api_response {
                     CreateEntryApiResponse::Success(success_response) => {
-                        let _ = session.insert(
-                            "form_submit",
+                        flash(
+                            FlashType::CreateFormUserFeedback,
                             CreateFormUserFeedback::Success(format!(
                                 "{}/{}",
                                 std::env::var("BASE_URL").unwrap(),
                                 form.shortname
                             )),
+                            &mut session,
                         );
 
                         let mut state = state.lock().unwrap();
@@ -126,24 +140,27 @@ pub(crate) async fn submit_form(
                         );
                     }
                     CreateEntryApiResponse::Error(api_error) => {
-                        let _ = session.insert(
-                            "form_submit",
+                        flash(
+                            FlashType::CreateFormUserFeedback,
                             CreateFormUserFeedback::Error(api_error.message),
+                            &mut session,
                         );
                     }
                 },
                 Err(error) => {
-                    let _ = session.insert(
-                        "form_submit",
+                    flash(
+                        FlashType::CreateFormUserFeedback,
                         CreateFormUserFeedback::Error(format!("Unexpected error: {:?}", error)),
+                        &mut session,
                     );
                 }
             }
         }
         Err(error) => {
-            let _ = session.insert(
-                "form_submit",
+            flash(
+                FlashType::CreateFormUserFeedback,
                 CreateFormUserFeedback::Error(format!("Unexpected error: {:?}", error)),
+                &mut session,
             );
         }
     };

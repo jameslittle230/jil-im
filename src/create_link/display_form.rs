@@ -2,7 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     state::{Link, State},
-    util::html_template::HtmlTemplate,
+    util::{
+        flash::{clear_flash, FlashType},
+        html_template::HtmlTemplate,
+    },
 };
 use askama::Template;
 use axum::{response::IntoResponse, Extension};
@@ -24,9 +27,11 @@ pub(crate) async fn display_form(
     mut session: WritableSession,
     Extension(state): Extension<Arc<Mutex<State>>>,
 ) -> impl IntoResponse {
-    let message: Option<CreateFormUserFeedback> = session.get("form_submit");
-    let form_user_values: CreateFormRememberValues =
-        session.get("form_user_values").unwrap_or_default();
+    let message: Option<CreateFormUserFeedback> =
+        session.get(FlashType::CreateFormUserFeedback.to_string().as_str());
+    let form_user_values: CreateFormRememberValues = session
+        .get(FlashType::CreateFormUserValues.to_string().as_str())
+        .unwrap_or_default();
 
     let state = state.lock().unwrap();
 
@@ -40,7 +45,7 @@ pub(crate) async fn display_form(
     popular.reverse();
     popular.truncate(5);
 
-    session.remove("form_submit");
+    clear_flash(&mut session);
 
     HtmlTemplate(CreateTemplate {
         message,
