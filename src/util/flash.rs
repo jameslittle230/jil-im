@@ -20,11 +20,6 @@ where
     }
 
     let _ = session.insert("__flash_keys", flash_keys);
-
-    dbg!(
-        kind.to_string().as_str(),
-        session.get_raw(kind.to_string().as_str())
-    );
 }
 
 pub(crate) fn clear_flash(session: &mut WritableSession) {

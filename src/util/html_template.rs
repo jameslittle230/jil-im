@@ -30,10 +30,6 @@ pub(crate) struct GlobalTemplateData {
 
 impl GlobalTemplateData {
     pub(crate) fn fetch(session: &WritableSession) -> Self {
-        dbg!(
-            FlashType::Alert.to_string().as_str(),
-            session.get_raw(FlashType::Alert.to_string().as_str())
-        );
         Self {
             alert: session.get(FlashType::Alert.to_string().as_str()),
             base_url: std::env::var("BASE_URL").unwrap(),

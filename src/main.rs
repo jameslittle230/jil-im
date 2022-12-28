@@ -6,6 +6,7 @@ use axum::{
 
 use axum_sessions::{async_session::MemoryStore, SessionLayer};
 
+use rand::{thread_rng, Rng};
 use tower_http::services::ServeDir;
 
 use hyper::{header, StatusCode};
@@ -33,12 +34,11 @@ async fn main() {
     let shared_state = Arc::new(Mutex::new(State::default()));
 
     let store = MemoryStore::new();
-    let secret = b"
-93 ad b2 56 79 30 85 5d 02 d1 0f e5 52 80 75 5b 
-80 bf 93 f7 b0 62 9d 42 fd e6 eb 10 6c 2f 6c 3d 
-da 6e 12 ed 0d d3 e7 93 eb 8e 97 bb 32 db 7f ca 
-d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
-    let session_layer = SessionLayer::new(store, secret);
+    let secret: Vec<u8> = thread_rng()
+        .sample_iter(rand::distributions::Standard)
+        .take(64)
+        .collect();
+    let session_layer = SessionLayer::new(store, &secret);
 
     state::fetch::fetch_state(&shared_state).await;
 
@@ -71,9 +71,11 @@ d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
         .layer(session_layer)
         .fallback(handle_404);
 
-    // run it
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let addr = SocketAddr::from(([0, 0, 0, 0], port.parse().unwrap()));
+
     println!("listening on {}", addr);
+
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

@@ -14,12 +14,10 @@ pub(crate) async fn fetch_state(state: &Arc<Mutex<State>>) {
     let result = client
         .get(format!(
             "{}/shortener/entries",
-            dbg!(std::env::var("JIL_API_URL")).unwrap()
+            std::env::var("JIL_API_URL").unwrap()
         ))
         .send()
         .await;
-
-    dbg!(&result);
 
     let mut state = state.lock().unwrap();
 
@@ -32,7 +30,7 @@ pub(crate) async fn fetch_state(state: &Arc<Mutex<State>>) {
             }
         }
         Err(err) => {
-            dbg!(err);
+            panic!("{}", err.to_string());
         }
     };
 
