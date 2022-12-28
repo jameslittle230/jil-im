@@ -1,6 +1,5 @@
 use axum::{
-    extract,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     routing::{get, get_service, post},
     Extension, Router,
 };
@@ -18,7 +17,9 @@ use std::{
 };
 
 // mod form_submit;
-mod create_link;
+mod create;
+mod list;
+mod redirect;
 mod state;
 mod util;
 
@@ -42,15 +43,14 @@ d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
     state::fetch::fetch_state(&shared_state).await;
 
     let app = Router::new()
-        .route(
-            "/",
-            get(create_link::display_form).post(create_link::submit_form),
-        )
+        .route("/", get(create::display_form).post(create::submit_form))
         .nest(
             "/-",
             Router::new()
                 .route("/healthcheck", get(handle_healthcheck))
-                .route("/admin/view", get(display_list))
+                .route("/state", get(display_state))
+                .route("/list", get(list::display_list).post(list::submit_form))
+                // .route("/about", get(display_about))
                 .nest_service(
                     "/assets",
                     get_service(ServeDir::new("assets")).handle_error(handle_error),
@@ -66,7 +66,7 @@ d9 14 7d 26 2b 61 3b c4 eb 51 ae eb b9 ac ac 15"; // MUST be at least 64 bytes!
                 )
                 .fallback(handle_dashroute_404),
         )
-        .route("/*path", get(redirect))
+        .route("/*path", get(redirect::redirect))
         .layer(Extension(shared_state))
         .layer(session_layer)
         .fallback(handle_404);
@@ -88,8 +88,12 @@ async fn handle_healthcheck() -> impl IntoResponse {
     (StatusCode::OK, "hello!")
 }
 
-async fn display_list() -> impl IntoResponse {
-    (StatusCode::NOT_IMPLEMENTED, "not implemented")
+async fn display_state(Extension(state): Extension<Arc<Mutex<State>>>) -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "application/json")],
+        serde_json::to_string(&state.lock().unwrap().to_owned()).unwrap(),
+    )
 }
 
 async fn create_redirects() -> impl IntoResponse {
@@ -106,37 +110,6 @@ async fn update_redirect() -> impl IntoResponse {
 }
 async fn delete_redirect() -> impl IntoResponse {
     StatusCode::TEMPORARY_REDIRECT
-}
-
-async fn redirect(
-    extract::OriginalUri(uri): extract::OriginalUri,
-    Extension(state): Extension<Arc<Mutex<State>>>,
-) -> Response {
-    let resolution = golink::resolve(&uri.to_string(), &|value| {
-        state
-            .lock()
-            .unwrap()
-            .links
-            .get(value)
-            .map(|link| link.longurl.clone())
-    });
-
-    dbg!(&resolution);
-
-    match resolution {
-        Ok(golink::GolinkResolution::RedirectRequest(uri, shortname)) => {
-            state
-                .lock()
-                .unwrap()
-                .links
-                .entry(shortname)
-                .and_modify(|v| v.clicks += 1);
-
-            (StatusCode::TEMPORARY_REDIRECT, [(header::LOCATION, uri)]).into_response()
-        }
-        Err(e) => (StatusCode::IM_A_TEAPOT, e.to_string()).into_response(),
-        _ => (StatusCode::NOT_IMPLEMENTED, "metadata request").into_response(),
-    }
 }
 
 async fn handle_404() -> impl IntoResponse {

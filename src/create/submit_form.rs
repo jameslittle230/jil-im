@@ -8,45 +8,29 @@ use serde::{Deserialize, Serialize};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
+use crate::util::flash::Alert;
 use crate::{
     state::Link,
     util::flash::{flash, FlashType},
     State,
 };
 
+use super::FormValues;
+
 #[derive(Serialize, Deserialize)]
-pub(crate) struct CreateForm {
+pub(crate) struct FormData {
     shortname: String,
     longurl: String,
     password: String,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
-pub(crate) struct CreateFormRememberValues {
-    pub(crate) shortname: String,
-    pub(crate) longurl: String,
-}
-
-impl From<&CreateForm> for CreateFormRememberValues {
-    fn from(value: &CreateForm) -> Self {
+impl From<&FormData> for FormValues {
+    fn from(value: &FormData) -> Self {
         Self {
             shortname: value.shortname.clone(),
             longurl: value.longurl.clone(),
         }
     }
-}
-
-#[derive(Serialize, Deserialize)]
-pub(crate) enum CreateFormUserFeedback {
-    Success(String),
-    Error(String),
-}
-
-#[derive(Serialize, Deserialize)]
-struct CreateEntrySuccessApiResponse {
-    longurl: String,
-    shortname: String,
-    created_at: String, // TODO: make this a chrono type
 }
 
 #[derive(Serialize, Deserialize)]
@@ -59,14 +43,14 @@ struct ApiError {
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 enum CreateEntryApiResponse {
-    Success(CreateEntrySuccessApiResponse),
+    Success(Link),
     Error(ApiError),
 }
 
 pub(crate) async fn submit_form(
     mut session: WritableSession,
     Extension(state): Extension<Arc<Mutex<State>>>,
-    Form(mut form): Form<CreateForm>,
+    Form(mut form): Form<FormData>,
 ) -> impl IntoResponse {
     if form.shortname.is_empty() {
         form.shortname = thread_rng()
@@ -79,14 +63,14 @@ pub(crate) async fn submit_form(
 
     flash(
         FlashType::CreateFormUserValues,
-        CreateFormRememberValues::from(&form),
+        FormValues::from(&form),
         &mut session,
     );
 
     if bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() == false {
         flash(
-            FlashType::CreateFormUserFeedback,
-            CreateFormUserFeedback::Error("Password was invalid.".to_string()),
+            FlashType::Alert,
+            Alert::Error("Password was invalid.".to_string()),
             &mut session,
         );
 
@@ -118,8 +102,8 @@ pub(crate) async fn submit_form(
                 Ok(api_response) => match api_response {
                     CreateEntryApiResponse::Success(success_response) => {
                         flash(
-                            FlashType::CreateFormUserFeedback,
-                            CreateFormUserFeedback::Success(format!(
+                            FlashType::Alert,
+                            Alert::Success(format!(
                                 "{}/{}",
                                 std::env::var("BASE_URL").unwrap(),
                                 form.shortname
@@ -141,16 +125,16 @@ pub(crate) async fn submit_form(
                     }
                     CreateEntryApiResponse::Error(api_error) => {
                         flash(
-                            FlashType::CreateFormUserFeedback,
-                            CreateFormUserFeedback::Error(api_error.message),
+                            FlashType::Alert,
+                            Alert::Error(api_error.message),
                             &mut session,
                         );
                     }
                 },
                 Err(error) => {
                     flash(
-                        FlashType::CreateFormUserFeedback,
-                        CreateFormUserFeedback::Error(format!("Unexpected error: {:?}", error)),
+                        FlashType::Alert,
+                        Alert::Error(format!("Unexpected error: {:?}", error)),
                         &mut session,
                     );
                 }
@@ -158,8 +142,8 @@ pub(crate) async fn submit_form(
         }
         Err(error) => {
             flash(
-                FlashType::CreateFormUserFeedback,
-                CreateFormUserFeedback::Error(format!("Unexpected error: {:?}", error)),
+                FlashType::Alert,
+                Alert::Error(format!("Unexpected error: {:?}", error)),
                 &mut session,
             );
         }

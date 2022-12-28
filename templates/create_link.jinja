@@ -4,25 +4,12 @@
 
 {% block content %}
 
-{% if let Some(CreateFormUserFeedback::Success(url)) = message %}
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-  Successfully created
-  <a href="{{ url }}" class="alert-link">{{ url }}</a>!
-  <button type="button" class="btn-close"></button>
-</div>
-{% elseif let Some(CreateFormUserFeedback::Error(error_msg)) = message %}
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  {{error_msg}}
-  <button type="button" class="btn-close"></button>
-</div>
-{% endif %}
-
 <div class="row">
   <div class="col-12 col-lg-6 mb-5">
     <form action="" method="POST">
       <div class="mb-3">
         <label for="longurl" class="form-label">Long URL</label>
-        <input type="text" class="form-control" id="longurl" name="longurl" value='{{ form_user_values.longurl }}' />
+        <input type="text" class="form-control" id="longurl" name="longurl" value='{{ form_values.longurl }}' />
         <div class="form-text">
           Learn more about <a href="/about">template syntax</a>.
         </div>
@@ -31,8 +18,7 @@
         <label for="shortname" class="form-label">Short URL</label>
         <div class="input-group">
           <span class="input-group-text">https://jil.im/</span>
-          <input type="text" class="form-control" id="shortname" name="shortname"
-            value='{{ form_user_values.shortname }}' />
+          <input type="text" class="form-control" id="shortname" name="shortname" value='{{ form_values.shortname }}' />
         </div>
         <div class="form-text">Leave blank for something random.</div>
       </div>
@@ -65,19 +51,17 @@
       <div class="tab-pane active" id="recent-tab-pane">
         <div class="list-group w-auto">
           {% for item in recent %}
-          <a href="{{ base_url }}/{{ item.shortname }}"
-            class="list-group-item list-group-item-action d-flex gap-3 py-3">
-            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32"
-              class="rounded-circle flex-shrink-0" />
+          <a href="{{ global_data.base_url }}/{{ item.shortname }}"
+            class="list-group-item list-group-item-action d-flex flex-column py-3 ">
             <div class="d-flex gap-2 w-100 justify-content-between">
-              <div>
-                <h6 class="mb-0">{{ item.shortname }}</h6>
-                <p class="mb-0 opacity-75 text-break font-monospace">
-                  {{ item.longurl }}
-                </p>
-              </div>
-              <small class="opacity-50 text-nowrap">{{ item.created_at }}</small>
+              <h6 class="mb-0">{{ item.shortname }}</h6>
+              <small class="opacity-50 text-nowrap" title="{{ item.created_at_iso8601() }}">{{
+                item.created_at_timeago()
+                }}</small>
             </div>
+            <p class="mb-0 opacity-75 text-break font-monospace">
+              <small>{{ item.longurl }}</small>
+            </p>
           </a>
           {% endfor %}
         </div>
@@ -85,20 +69,17 @@
       <div class="tab-pane" id="popular-tab-pane">
         <div class="tab-pane list-group w-auto" id="popular-tab-pane" role="tabpanel">
           {% for item in popular %}
-          <a href="{{ base_url }}/{{ item.shortname }}"
-            class="list-group-item list-group-item-action d-flex gap-3 py-3">
-            <img src="https://github.com/twbs.png" alt="twbs" width="32" height="32"
-              class="rounded-circle flex-shrink-0" />
+          <a href="{{ global_data.base_url }}/{{ item.shortname }}"
+            class="list-group-item list-group-item-action d-flex flex-column py-3 ">
             <div class="d-flex gap-2 w-100 justify-content-between">
-              <div>
-                <h6 class="mb-0">{{ item.shortname }}</h6>
-                <p class="mb-0 opacity-75">
-                  {{ item.longurl }}
-                </p>
-              </div>
+              <h6 class="mb-0">{{ item.shortname }}</h6>
               <small class="opacity-50 text-nowrap">{{ item.clicks }}</small>
             </div>
+            <p class="mb-0 opacity-75 text-break font-monospace">
+              <small>{{ item.longurl }}</small>
+            </p>
           </a>
+
           {% endfor %}
         </div>
       </div>
@@ -106,4 +87,21 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block script %}
+<script>
+  const triggerTabList = document.querySelectorAll('#mytab button')
+  triggerTabList.forEach(triggerEl => {
+    const tabTrigger = new bootstrap.Tab(triggerEl)
+    console.log(tabTrigger)
+
+    triggerEl.addEventListener('click', event => {
+      event.preventDefault()
+      tabTrigger.show()
+      console.log(tabTrigger)
+    })
+  })
+
+</script>
 {% endblock %}

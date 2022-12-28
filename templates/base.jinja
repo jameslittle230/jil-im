@@ -21,14 +21,31 @@
         </a>
 
         <ul class="nav col-12 col-lg-auto justify-content-center mb-md-0">
-          <li><a href="#" class="nav-link px-2 text-secondary">Create</a></li>
-          <li><a href="#" class="nav-link px-2 text-white">List</a></li>
+          <li><a href="/" class="nav-link px-2 text-secondary">Create</a></li>
+          <li><a href="/-/list" class="nav-link px-2 text-white">List</a></li>
           <li><a href="#" class="nav-link px-2 text-white">About</a></li>
         </ul>
       </div>
     </div>
   </header>
   <div class="container">
+    {% if let Some(Alert::Success(msg)) = global_data.alert %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{msg}}
+      <button type="button" class="btn-close"></button>
+    </div>
+    {% elseif let Some(Alert::Error(msg)) = global_data.alert %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      {{msg}}
+      <button type="button" class="btn-close"></button>
+    </div>
+    {% elseif let Some(Alert::Info(msg)) = global_data.alert %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      {{msg}}
+      <button type="button" class="btn-close"></button>
+    </div>
+    {% endif %}
+
     {% block content %}{% endblock %}
     <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-5 border-top">
       <p class="col-md-4 mb-0 text-muted">Made by <a href="https://jameslittle.me">James Little</a></p>
@@ -38,20 +55,7 @@
     integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
     crossorigin="anonymous"></script>
 
-  <script>
-    const triggerTabList = document.querySelectorAll('#mytab button')
-    triggerTabList.forEach(triggerEl => {
-      const tabTrigger = new bootstrap.Tab(triggerEl)
-      console.log(tabTrigger)
-
-      triggerEl.addEventListener('click', event => {
-        event.preventDefault()
-        tabTrigger.show()
-        console.log(tabTrigger)
-      })
-    })
-
-  </script>
+  {% block script %}{% endblock %}
 </body>
 
 </html>

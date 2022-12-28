@@ -3,33 +3,31 @@ use std::sync::{Arc, Mutex};
 use crate::{
     state::{Link, State},
     util::{
-        flash::{clear_flash, FlashType},
-        html_template::HtmlTemplate,
+        flash::{clear_flash, Alert, FlashType},
+        html_template::{GlobalTemplateData, HtmlTemplate},
     },
 };
 use askama::Template;
 use axum::{response::IntoResponse, Extension};
 use axum_sessions::extractors::WritableSession;
 
-use super::submit_form::{CreateFormRememberValues, CreateFormUserFeedback};
+use super::FormValues;
 
 #[derive(Template)]
 #[template(path = "create_link.jinja")]
 struct CreateTemplate {
-    message: Option<CreateFormUserFeedback>,
-    form_user_values: CreateFormRememberValues,
+    global_data: GlobalTemplateData,
+    form_values: FormValues,
     popular: Vec<Link>,
     recent: Vec<Link>,
-    base_url: String,
 }
 
 pub(crate) async fn display_form(
     mut session: WritableSession,
     Extension(state): Extension<Arc<Mutex<State>>>,
 ) -> impl IntoResponse {
-    let message: Option<CreateFormUserFeedback> =
-        session.get(FlashType::CreateFormUserFeedback.to_string().as_str());
-    let form_user_values: CreateFormRememberValues = session
+    let global_data = GlobalTemplateData::fetch(&session);
+    let form_values: FormValues = session
         .get(FlashType::CreateFormUserValues.to_string().as_str())
         .unwrap_or_default();
 
@@ -41,17 +39,15 @@ pub(crate) async fn display_form(
     recent.truncate(5);
 
     let mut popular: Vec<Link> = state.links.values().cloned().collect();
-    popular.sort_by_key(|link| link.clicks);
-    popular.reverse();
+    popular.sort_by_key(|link| usize::MAX - link.clicks);
     popular.truncate(5);
 
     clear_flash(&mut session);
 
     HtmlTemplate(CreateTemplate {
-        message,
-        form_user_values,
+        global_data,
+        form_values,
         popular,
         recent,
-        base_url: std::env::var("BASE_URL").unwrap(),
     })
 }
