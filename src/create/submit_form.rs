@@ -67,7 +67,7 @@ pub(crate) async fn submit_form(
         &mut session,
     );
 
-    if bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() == false {
+    if !bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() {
         flash(
             FlashType::Alert,
             Alert::Error("Password was invalid.".to_string()),
@@ -118,7 +118,7 @@ pub(crate) async fn submit_form(
                             Link {
                                 shortname: success_response.shortname.clone(),
                                 longurl: success_response.longurl.clone(),
-                                created_at: success_response.created_at.clone(),
+                                created_at: success_response.created_at,
                                 clicks: 0,
                             },
                         );

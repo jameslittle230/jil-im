@@ -61,13 +61,11 @@ pub(crate) async fn submit_form(
                 },
                 &mut session,
             );
-            return (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response();
+            (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response()
         }
 
         FormAction::Delete => {
-            if bcrypt::verify(&form.password.unwrap_or_default(), &state.password_hash).unwrap()
-                == false
-            {
+            if !bcrypt::verify(form.password.unwrap_or_default(), &state.password_hash).unwrap() {
                 flash(
                     FlashType::Alert,
                     Alert::Error("Password was invalid.".to_string()),
@@ -82,7 +80,7 @@ pub(crate) async fn submit_form(
                 );
                 state.links.remove(&form.shortname);
             }
-            return (StatusCode::FOUND, [(header::LOCATION, "/-/list")]).into_response();
+            (StatusCode::FOUND, [(header::LOCATION, "/-/list")]).into_response()
         }
     }
 }

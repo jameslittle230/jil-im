@@ -805,6 +805,8 @@ checksum = "22030e2c5a68ec659fde1e949a745124b48e6fa8b045b7ed5bd1fe4ccc5c4e5d"
 [[package]]
 name = "golink"
 version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd22fd6a0b807cbf138cd3febfb76a6f200a460e4094da399428d14fd7de1820"
 dependencies = [
  "itertools",
  "serde",

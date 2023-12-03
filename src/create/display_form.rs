@@ -34,7 +34,7 @@ pub(crate) async fn display_form(
     let state = state.lock().unwrap();
 
     let mut recent: Vec<Link> = state.links.values().cloned().collect();
-    recent.sort_by_key(|link| link.created_at.clone());
+    recent.sort_by_key(|link| link.created_at);
     recent.reverse();
     recent.truncate(5);
 

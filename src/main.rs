@@ -95,7 +95,7 @@ async fn display_state(Extension(state): Extension<Arc<Mutex<State>>>) -> impl I
     (
         StatusCode::OK,
         [(header::CONTENT_TYPE, "application/json")],
-        serde_json::to_string(&state.lock().unwrap().to_owned()).unwrap(),
+        serde_json::to_string(&state.lock().unwrap().clone()).unwrap(),
     )
 }
 

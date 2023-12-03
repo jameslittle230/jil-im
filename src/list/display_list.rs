@@ -26,7 +26,7 @@ pub(crate) async fn display_list(
     let state = state.lock().unwrap();
 
     let mut links: Vec<Link> = state.links.values().cloned().collect();
-    links.sort_by_key(|link| link.created_at.clone());
+    links.sort_by_key(|link| link.created_at);
     links.reverse();
 
     clear_flash(&mut session);
