@@ -36,17 +36,14 @@
     {% if let Some(Alert::Success(msg)) = global_data.alert %}
     <div class="alert alert-success alert-dismissible fade show" role="alert">
       {{msg}}
-      <button type="button" class="btn-close"></button>
     </div>
     {% elseif let Some(Alert::Error(msg)) = global_data.alert %}
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
       {{msg}}
-      <button type="button" class="btn-close"></button>
     </div>
     {% elseif let Some(Alert::Info(msg)) = global_data.alert %}
     <div class="alert alert-info alert-dismissible fade show" role="alert">
       {{msg}}
-      <button type="button" class="btn-close"></button>
     </div>
     {% endif %}
 

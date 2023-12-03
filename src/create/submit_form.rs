@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use crate::util::flash::Alert;
+use crate::api_client::ApiClient;
+use crate::util::flash::{flash_error_alert, flash_success_alert, Alert};
 use crate::{
     state::Link,
     util::flash::{flash, FlashType},
@@ -68,78 +69,25 @@ pub(crate) async fn submit_form(
     );
 
     if !bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() {
-        flash(
-            FlashType::Alert,
-            Alert::Error("Password was invalid.".to_string()),
-            &mut session,
-        );
-
+        flash_error_alert("Password was invalid.".to_string(), &mut session);
         return (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response();
     }
 
-    let client = reqwest::Client::new();
-    let result = client
-        .post(format!(
-            "{}/shortener/entries",
-            std::env::var("JIL_API_URL").unwrap()
-        ))
-        .json(&form)
-        .header(
-            "Authorization",
-            format!(
-                "Bearer {}",
-                std::env::var("JIL_API_ADMIN_BEARER_TOKEN").unwrap()
-            ),
-        )
-        .send()
+    let result = ApiClient::new()
+        .create_entry(&form.shortname, &form.longurl)
         .await;
 
     match result {
-        Ok(response) => {
-            let result = response.json::<CreateEntryApiResponse>().await;
+        Ok(link) => {
+            flash_success_alert(
+                format!("{}/{}", std::env::var("BASE_URL").unwrap(), form.shortname),
+                &mut session,
+            );
 
-            match result {
-                Ok(api_response) => match api_response {
-                    CreateEntryApiResponse::Success(success_response) => {
-                        flash(
-                            FlashType::Alert,
-                            Alert::Success(format!(
-                                "{}/{}",
-                                std::env::var("BASE_URL").unwrap(),
-                                form.shortname
-                            )),
-                            &mut session,
-                        );
-
-                        let mut state = state.lock().unwrap();
-
-                        state.links.insert(
-                            success_response.shortname.clone(),
-                            Link {
-                                shortname: success_response.shortname.clone(),
-                                longurl: success_response.longurl.clone(),
-                                created_at: success_response.created_at,
-                                clicks: 0,
-                            },
-                        );
-                    }
-                    CreateEntryApiResponse::Error(api_error) => {
-                        flash(
-                            FlashType::Alert,
-                            Alert::Error(api_error.message),
-                            &mut session,
-                        );
-                    }
-                },
-                Err(error) => {
-                    flash(
-                        FlashType::Alert,
-                        Alert::Error(format!("Unexpected error: {:?}", error)),
-                        &mut session,
-                    );
-                }
-            }
+            let mut state = state.lock().unwrap();
+            state.links.insert(link.shortname.clone(), link);
         }
+
         Err(error) => {
             flash(
                 FlashType::Alert,
@@ -147,7 +95,7 @@ pub(crate) async fn submit_form(
                 &mut session,
             );
         }
-    };
+    }
 
     (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response()
 }

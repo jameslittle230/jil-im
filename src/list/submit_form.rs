@@ -8,7 +8,7 @@ use strum::Display;
 
 use crate::{
     state::State,
-    util::flash::{flash, Alert, FlashType},
+    util::flash::{flash, flash_error_alert, flash_info_alert, flash_success_alert, FlashType},
 };
 
 #[derive(Debug, Display, Serialize, Deserialize)]
@@ -43,13 +43,12 @@ pub(crate) async fn submit_form(
     match form.action {
         FormAction::Edit => {
             let link = state.links.get(&form.shortname).unwrap();
-            flash(
-                FlashType::Alert,
-                Alert::Info(format!(
+            flash_info_alert(
+                format!(
                     "Editing link for {}/{}",
                     std::env::var("BASE_URL").unwrap(),
                     form.shortname
-                )),
+                ),
                 &mut session,
             );
 
@@ -66,20 +65,14 @@ pub(crate) async fn submit_form(
 
         FormAction::Delete => {
             if !bcrypt::verify(form.password.unwrap_or_default(), &state.password_hash).unwrap() {
-                flash(
-                    FlashType::Alert,
-                    Alert::Error("Password was invalid.".to_string()),
-                    &mut session,
-                );
-            } else {
-                // TODO: Send API call to remove link from database
-                flash(
-                    FlashType::Alert,
-                    Alert::Success("Link deleted successfully.".to_string()),
-                    &mut session,
-                );
-                state.links.remove(&form.shortname);
+                flash_error_alert("Password was invalid.".to_string(), &mut session);
+                return (StatusCode::FOUND, [(header::LOCATION, "/-/list")]).into_response();
             }
+
+            // TODO: Send API call to remove link from database
+            flash_success_alert("Link deleted successfully.".to_string(), &mut session);
+            state.links.remove(&form.shortname);
+
             (StatusCode::FOUND, [(header::LOCATION, "/-/list")]).into_response()
         }
     }

@@ -63,7 +63,6 @@ impl ApiClient {
     }
 
     pub(crate) async fn create_entry(&self, shortname: &str, longurl: &str) -> Result<Link> {
-        let client = reqwest::Client::new();
         let resp = self
             .post(
                 "shortener/entries",

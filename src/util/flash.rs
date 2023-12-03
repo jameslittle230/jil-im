@@ -22,6 +22,18 @@ where
     let _ = session.insert("__flash_keys", flash_keys);
 }
 
+pub(crate) fn flash_error_alert(message: String, session: &mut WritableSession) {
+    flash(FlashType::Alert, Alert::Error(message), session);
+}
+
+pub(crate) fn flash_success_alert(message: String, session: &mut WritableSession) {
+    flash(FlashType::Alert, Alert::Success(message), session);
+}
+
+pub(crate) fn flash_info_alert(message: String, session: &mut WritableSession) {
+    flash(FlashType::Alert, Alert::Info(message), session);
+}
+
 pub(crate) fn clear_flash(session: &mut WritableSession) {
     let flash_keys: Vec<String> = session.get("__flash_keys").unwrap_or_default();
 
