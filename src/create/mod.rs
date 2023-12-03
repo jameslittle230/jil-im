@@ -10,4 +10,5 @@ use serde::{Deserialize, Serialize};
 pub(crate) struct FormValues {
     pub(crate) shortname: String,
     pub(crate) longurl: String,
+    pub(crate) shortname_is_disabled: bool,
 }

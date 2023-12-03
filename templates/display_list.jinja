@@ -27,11 +27,11 @@
                   <input name="action" value="edit" type="hidden" />
                   <button type="submit" class="link dropdown-item">Edit</button>
                 </form>
-                <form method="post" id="delete" action="/-/list">
+                <form method="post" id="delete-{{item.shortname}}" action="/-/list">
                   <input name="shortname" value="{{ item.shortname }}" type="hidden" />
                   <input name="action" value="delete" type="hidden" />
-                  <button type="button" class="link link-danger dropdown-item" data-bs-toggle="modal"
-                    data-bs-target="#exampleModal">Delete</button>
+                  <button type="button" data-formid="delete-{{item.shortname}}" class="link link-danger dropdown-item"
+                    data-bs-toggle="modal" data-bs-target="#exampleModal">Delete</button>
                 </form>
               </div>
             </div>
@@ -69,6 +69,17 @@
 
 {% block script %}
 <script>
-  const passwordModal = new bootstrap.Modal(document.getElementById("exampleModal"))
+  const passwordModalElement = document.getElementById("exampleModal")
+  const passwordModal = new bootstrap.Modal(passwordModalElement)
+  passwordModalElement.addEventListener('show.bs.modal', e => {
+    const button = e.relatedTarget
+    const formId = button.dataset.formid
+
+    const passwordInput = passwordModalElement.querySelector("#password")
+    passwordInput.setAttribute("form", formId);
+
+    const submitButton = passwordModalElement.querySelector("button[type=submit]")
+    submitButton.setAttribute("form", formId);
+  })
 </script>
 {% endblock %}

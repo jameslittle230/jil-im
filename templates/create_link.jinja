@@ -11,14 +11,15 @@
         <label for="longurl" class="form-label">Long URL</label>
         <input type="text" class="form-control" id="longurl" name="longurl" value='{{ form_values.longurl }}' />
         <div class="form-text">
-          Learn more about <a href="/about">template syntax</a>.
+          Learn more about <a href="/-/about">template syntax</a>.
         </div>
       </div>
       <div class="mb-3">
         <label for="shortname" class="form-label">Short URL</label>
         <div class="input-group">
           <span class="input-group-text">https://jil.im/</span>
-          <input type="text" class="form-control" id="shortname" name="shortname" value='{{ form_values.shortname }}' />
+          <input type="text" class="form-control" id="shortname" name="shortname" {% if
+            form_values.shortname_is_disabled %}disabled{%endif%} value='{{ form_values.shortname }}' />
         </div>
         <div class="form-text">Leave blank for something random.</div>
       </div>

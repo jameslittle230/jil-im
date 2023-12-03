@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Result};
+use anyhow::{Error, Result};
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,8 @@ impl ApiClient {
                 format!("Bearer {}", self.jil_api_admin_bearer_token),
             )
             .send()
-            .await?;
+            .await
+            .map(|resp| resp.error_for_status())??;
 
         Ok(res)
     }
@@ -57,7 +58,8 @@ impl ApiClient {
                 format!("Bearer {}", self.jil_api_admin_bearer_token),
             )
             .send()
-            .await?;
+            .await
+            .map(|resp| resp.error_for_status())??;
 
         Ok(res)
     }

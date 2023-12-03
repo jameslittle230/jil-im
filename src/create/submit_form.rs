@@ -1,12 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
+use axum::http::{header, StatusCode};
 use axum::{extract::Form, response::IntoResponse, Extension};
-use axum_sessions::extractors::WritableSession;
-use hyper::{header, StatusCode};
+
 use serde::{Deserialize, Serialize};
 
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use tower_sessions::Session;
 
 use crate::api_client::ApiClient;
 use crate::util::flash::{flash_error_alert, flash_success_alert, Alert};
@@ -30,6 +32,7 @@ impl From<&FormData> for FormValues {
         Self {
             shortname: value.shortname.clone(),
             longurl: value.longurl.clone(),
+            shortname_is_disabled: false,
         }
     }
 }
@@ -49,7 +52,7 @@ enum CreateEntryApiResponse {
 }
 
 pub(crate) async fn submit_form(
-    mut session: WritableSession,
+    mut session: Session,
     Extension(state): Extension<Arc<Mutex<State>>>,
     Form(mut form): Form<FormData>,
 ) -> impl IntoResponse {
@@ -68,7 +71,7 @@ pub(crate) async fn submit_form(
         &mut session,
     );
 
-    if !bcrypt::verify(&form.password, &state.lock().unwrap().password_hash).unwrap() {
+    if !bcrypt::verify(&form.password, &state.lock().await.password_hash).unwrap() {
         flash_error_alert("Password was invalid.".to_string(), &mut session);
         return (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response();
     }
@@ -84,7 +87,7 @@ pub(crate) async fn submit_form(
                 &mut session,
             );
 
-            let mut state = state.lock().unwrap();
+            let mut state = state.lock().await;
             state.links.insert(link.shortname.clone(), link);
         }
 

@@ -1,0 +1,65 @@
+{% extends "base.jinja" %}
+
+{% block title %}Index{% endblock %}
+
+{% block content %}
+
+<div class="row">
+  <style>
+    pre {
+      background-color: #2f2f2f;
+      color: #dcdcdc;
+      border-radius: 0.25rem;
+      padding: 0.75rem;
+    }
+
+    p {
+      max-width: 64ch;
+    }
+  </style>
+  <div class="col-12">
+    <h1>jil.im</h1>
+    <p class="lead">A link shortener.</p>
+    <p>This web service uses the <a href="https://docs.rs/golink/latest/golink/">golink</a> crate to resolve short links
+      into long URLs. This means you can use the following functionality while building links:</p>
+
+    <h2 class="mt-4">Predictable normalization</h2>
+
+    <p>Case and hyphenation are both normalized when resolving links. This means that <code>jil.im/My-Link</code> and
+      <code>jil.im/mylink</code> will both resolve to the same URL.
+    </p>
+
+    <h2 class="mt-4">Path appending</h2>
+
+    <p>If you append a path to a short link, it will be appended to the long URL. For example,
+      if <code>jil.im/foo</code> resolves to <code>https://example.com</code>, then <code>jil.im/foo/bar/baz?25</code>
+      will resolve to
+      <code>https://example.com/bar/baz?25</code>.
+    </p>
+
+    <h2 class="mt-4">Templating</h2>
+
+    <p>Using a simple templating language, your long URLs can powerfully place remaining path segments in your URL
+      ad-hoc
+      and provide a fallback value when there are no remaining path segments. For example, if your mapping function
+      returns for the given shortlink prs the following URL:</p>
+
+    <pre><code>{% raw %}https://github.com/pulls?q=is:open+is:pr+review-requested:{{ if path }}{ path }{{ else }}@me{{ endif }}+archived:false{% endraw %}</code></pre>
+
+    <p>then <code>jil.im/prs</code> will resolve to the URL to all Github PRs to which you are assigned:</p>
+
+    <pre><code>https://github.com/pulls?q=is:open+is:pr+review-requested:@me+archived:false</code></pre>
+
+    <p>and <code>jil.im/prs/jameslittle230</code> will resolve to the URL to all Github PRs to which the user
+      <code>jameslittle230</code> is assigned:
+    </p>
+
+    <pre><code>https://github.com/pulls?q=is:open+is:pr+review-requested:jameslittle230+archived:false</code></pre>
+
+    <h2 class="mt-4">Why <code>jil.im</code>?</h2>
+
+    <p>jil are my initials. This was the first two-letter TLD I found that had jil available as a domain name.</p>
+  </div>
+</div>
+
+{% endblock %}

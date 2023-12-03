@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,7 @@ pub(crate) async fn fetch_state(state: &Arc<Mutex<State>>) {
         .send()
         .await;
 
-    let mut state = state.lock().unwrap();
+    let mut state = state.lock().await;
 
     match result {
         Ok(response) => {

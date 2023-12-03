@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::{
     state::{Link, State},
@@ -9,7 +10,7 @@ use crate::{
 };
 use askama::Template;
 use axum::{response::IntoResponse, Extension};
-use axum_sessions::extractors::WritableSession;
+use tower_sessions::Session;
 
 #[derive(Template)]
 #[template(path = "display_list.jinja")]
@@ -19,11 +20,11 @@ struct CreateTemplate {
 }
 
 pub(crate) async fn display_list(
-    mut session: WritableSession,
+    mut session: Session,
     Extension(state): Extension<Arc<Mutex<State>>>,
 ) -> impl IntoResponse {
     let global_data = GlobalTemplateData::fetch(&session);
-    let state = state.lock().unwrap();
+    let state = state.lock().await;
 
     let mut links: Vec<Link> = state.links.values().cloned().collect();
     links.sort_by_key(|link| link.created_at);

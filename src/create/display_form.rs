@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::{
     state::{Link, State},
@@ -9,7 +10,7 @@ use crate::{
 };
 use askama::Template;
 use axum::{response::IntoResponse, Extension};
-use axum_sessions::extractors::WritableSession;
+use tower_sessions::Session;
 
 use super::FormValues;
 
@@ -23,15 +24,16 @@ struct CreateTemplate {
 }
 
 pub(crate) async fn display_form(
-    mut session: WritableSession,
+    mut session: Session,
     Extension(state): Extension<Arc<Mutex<State>>>,
 ) -> impl IntoResponse {
     let global_data = GlobalTemplateData::fetch(&session);
     let form_values: FormValues = session
-        .get(FlashType::CreateFormUserValues.to_string().as_str())
+        .get(&(FlashType::CreateFormUserValues.to_string()))
+        .expect("infallible")
         .unwrap_or_default();
 
-    let state = state.lock().unwrap();
+    let state = state.lock().await;
 
     let mut recent: Vec<Link> = state.links.values().cloned().collect();
     recent.sort_by_key(|link| link.created_at);

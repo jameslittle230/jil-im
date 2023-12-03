@@ -1,7 +1,10 @@
 use askama::Template;
-use axum::response::{Html, IntoResponse, Response};
-use axum_sessions::extractors::WritableSession;
-use hyper::StatusCode;
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+};
+
+use tower_sessions::Session;
 
 use super::flash::{Alert, FlashType};
 
@@ -29,9 +32,11 @@ pub(crate) struct GlobalTemplateData {
 }
 
 impl GlobalTemplateData {
-    pub(crate) fn fetch(session: &WritableSession) -> Self {
+    pub(crate) fn fetch(session: &Session) -> Self {
         Self {
-            alert: session.get(FlashType::Alert.to_string().as_str()),
+            alert: session
+                .get(FlashType::Alert.to_string().as_str())
+                .expect("infallible"),
             base_url: std::env::var("BASE_URL").unwrap(),
         }
     }
