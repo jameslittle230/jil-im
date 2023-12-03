@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{Link, State};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct EntriesResponse {
     items: Vec<Link>,
 }
@@ -16,6 +16,7 @@ pub(crate) async fn fetch_state(state: &Arc<Mutex<State>>) {
             "{}/shortener/entries",
             std::env::var("JIL_API_URL").unwrap()
         ))
+        .header("User-Agent", "jil-im/0.1.0")
         .send()
         .await;
 
