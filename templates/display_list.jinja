@@ -27,10 +27,11 @@
                   <input name="action" value="edit" type="hidden" />
                   <button type="submit" class="link dropdown-item">Edit</button>
                 </form>
-                <form method="post" action="/-/list">
+                <form method="post" id="delete" action="/-/list">
                   <input name="shortname" value="{{ item.shortname }}" type="hidden" />
                   <input name="action" value="delete" type="hidden" />
-                  <button type="submit" class="link dropdown-item">Delete</button>
+                  <button type="button" class="link link-danger dropdown-item" data-bs-toggle="modal"
+                    data-bs-target="#exampleModal">Delete</button>
                 </form>
               </div>
             </div>
@@ -49,19 +50,17 @@
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="passwordConfirm" method="post" action="/-/list">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Enter a password to delete</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <input type="password" name="password" class="form-control" id="password">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button name="action" value="delete" class="btn btn-danger">Delete</button>
-        </div>
-      </form>
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Enter a password to delete</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="password" name="password" class="form-control" id="password" form="delete">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="submit" form="delete" class="btn btn-danger">Delete</button>
+      </div>
     </div>
   </div>
 </div>
@@ -71,25 +70,5 @@
 {% block script %}
 <script>
   const passwordModal = new bootstrap.Modal(document.getElementById("exampleModal"))
-
-  for (const form of document.forms) {
-    if (form.id === 'passwordConfirm') {
-      form.addEventListener('formdata', (event) => {
-        event.formData.set('shortname', event.currentTarget.previousFormData.get('shortname'))
-        event.formData.set('action', "delete")
-      })
-    } else {
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const formData = new FormData(event.target)
-        if (formData.get("action") === "delete") {
-          document.getElementById('passwordConfirm').previousFormData = formData;
-          passwordModal.show();
-        } else {
-          event.target.submit();
-        }
-      })
-    }
-  }
 </script>
 {% endblock %}
