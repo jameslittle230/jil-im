@@ -1,4 +1,3 @@
-use anyhow::Context;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -38,7 +37,7 @@ pub(crate) struct FormData {
 pub(crate) async fn submit_form(
     mut session: Session,
     Extension(state): Extension<Arc<Mutex<State>>>,
-    Form(mut form): Form<FormData>,
+    Form(form): Form<FormData>,
 ) -> impl IntoResponse {
     match form.action {
         FormAction::Edit => {
@@ -93,52 +92,3 @@ pub(crate) async fn submit_form(
         }
     }
 }
-
-// pub(crate) async fn submit_form(
-//     mut session: Session,
-//     Extension(state): Extension<Arc<Mutex<State>>>,
-//     Form(form): Form<FormData>,
-// ) -> impl IntoResponse {
-//     let mut state = state.lock().unwrap();
-//     let _ = ApiClient::new()
-//         .delete_entry(&form.shortname)
-//         .await
-//         .unwrap();
-
-//     // match form.action {
-//     //     FormAction::Edit => {
-//     //         let link = state.links.get(&form.shortname).unwrap();
-//     //         flash_info_alert(
-//     //             format!(
-//     //                 "Editing link for {}/{}",
-//     //                 std::env::var("BASE_URL").unwrap(),
-//     //                 form.shortname
-//     //             ),
-//     //             &mut session,
-//     //         );
-
-//     //         flash(
-//     //             FlashType::CreateFormUserValues,
-//     //             CreateFormRememberValues {
-//     //                 shortname: link.shortname.clone(),
-//     //                 longurl: link.longurl.clone(),
-//     //             },
-//     //             &mut session,
-//     //         );
-//     //         (StatusCode::FOUND, [(header::LOCATION, "/")]).into_response()
-//     //     }
-
-//     //     FormAction::Delete => {
-//     //         if !bcrypt::verify(form.password.unwrap_or_default(), &state.password_hash).unwrap() {
-//     //             flash_error_alert("Password was invalid.".to_string(), &mut session);
-//     //             return (StatusCode::FOUND, [(header::LOCATION, "/-/list")]).into_response();
-//     //         }
-
-//     //         // TODO: Send API call to remove link from database
-//     //         flash_success_alert("Link deleted successfully.".to_string(), &mut session);
-//     //         state.links.remove(&form.shortname);
-
-//     //         (StatusCode::FOUND, [(header::LOCATION, "/-/list")]).into_response()
-//     //     }
-//     // }
-// }

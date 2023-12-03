@@ -92,4 +92,20 @@ impl ApiClient {
 
         Ok(())
     }
+
+    pub(crate) async fn get_entries(&self) -> Result<EntriesResponse> {
+        let resp = self.get("shortener/entries").await?;
+        let res = resp.json::<EntriesResponse>().await?;
+        Ok(res)
+    }
+
+    pub(crate) async fn sync_stats(&self, values: serde_json::Value) -> Result<()> {
+        self.post("shortener/stats", &values).await?;
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct EntriesResponse {
+    pub(crate) items: Vec<Link>,
 }

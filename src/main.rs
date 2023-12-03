@@ -7,14 +7,13 @@ use axum::{
     BoxError, Extension, Router,
 };
 
-use rand::{thread_rng, Rng};
 use tower::ServiceBuilder;
 
 use tower_http::services::ServeDir;
 use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, Session, SessionManagerLayer};
 use util::html_template::{GlobalTemplateData, HtmlTemplate};
 
-use std::{io, net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
 
 // mod form_submit;
@@ -36,10 +35,6 @@ async fn main() {
     let shared_state = Arc::new(Mutex::new(State::default()));
 
     let store = MemoryStore::default();
-    let secret: Vec<u8> = thread_rng()
-        .sample_iter(rand::distributions::Standard)
-        .take(64)
-        .collect();
 
     let session_layer = ServiceBuilder::new()
         .layer(HandleErrorLayer::new(|_: BoxError| async {
@@ -65,12 +60,7 @@ async fn main() {
                 .nest_service("/assets", ServeDir::new("assets"))
                 .nest(
                     "/api",
-                    Router::new()
-                        .route("/redirects", get(list_redirects))
-                        .route("/redirects", post(create_redirects))
-                        .route("/redirects/:key", get(retrieve_redirect))
-                        .route("/redirects/:key/update", post(update_redirect))
-                        .route("/redirects/:key/delete", post(delete_redirect)),
+                    Router::new().route("/sync-stats", post(state::sync::sync_stats)),
                 )
                 .fallback(handle_dashroute_404),
         )
@@ -86,10 +76,6 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn handle_error(_err: io::Error) -> (StatusCode, &'static str) {
-    (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong...")
 }
 
 async fn handle_healthcheck() -> impl IntoResponse {
@@ -113,22 +99,6 @@ async fn display_state(Extension(state): Extension<Arc<Mutex<State>>>) -> impl I
         [(header::CONTENT_TYPE, "application/json")],
         serde_json::to_string(&state.lock().await.clone()).unwrap(),
     )
-}
-
-async fn create_redirects() -> impl IntoResponse {
-    (StatusCode::NOT_IMPLEMENTED, "not implemented")
-}
-async fn list_redirects() -> impl IntoResponse {
-    (StatusCode::NOT_IMPLEMENTED, "not implemented")
-}
-async fn retrieve_redirect() -> impl IntoResponse {
-    (StatusCode::NOT_IMPLEMENTED, "not implemented")
-}
-async fn update_redirect() -> impl IntoResponse {
-    (StatusCode::NOT_IMPLEMENTED, "not implemented")
-}
-async fn delete_redirect() -> impl IntoResponse {
-    StatusCode::TEMPORARY_REDIRECT
 }
 
 async fn handle_404() -> impl IntoResponse {

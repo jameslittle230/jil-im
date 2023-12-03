@@ -1,4 +1,5 @@
 pub(crate) mod fetch;
+pub(crate) mod sync;
 
 use std::collections::HashMap;
 
